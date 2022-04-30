@@ -14,7 +14,7 @@ export const handler = async (event: any) => {
     console.log('body', JSON.stringify(event.body))
 
     const body = JSON.parse(event.body);
-    const filename = body.data.filename;
+    const filename = body.data.filename; // Todo: handle array of filenames
 
     if (!filename) return {statusCode: 400, body: {error: 'Missing filename parameter'}};
 
@@ -28,6 +28,13 @@ export const handler = async (event: any) => {
 
     try {
         await managementApi.postToConnection({ConnectionId: connectionId, Data: 'STARTED'}).promise();
+        // Todo: loop all filenames
+        // Todo: upload to ipfs via infura, with api key
+        // Todo: send message about status of upload success/fail for each
+        // Todo: pin with infura
+        // Todo: send message about status of pinning success/fail for each
+        await managementApi.postToConnection({ConnectionId: connectionId, Data: 'DONE'}).promise();
+        // Todo: kick connection
     } catch (e: any) {
         console.log('Stack', e?.stack);
         return {
