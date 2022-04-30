@@ -26,7 +26,7 @@ let socket = new WebSocket(YOUR_WEBSOCKET_URL);
 socket.onopen = function(e) {
     console.log("[open] Connection established");
     console.log("Sending to server");
-    socket.send('{"action":"message","data":"hello world"}');
+    socket.send('{"action":"ipfs-upload","data":{"filename":"filename_that_exists_in_s3"}}');
 };
 
 socket.onmessage = function(event) {
@@ -37,8 +37,6 @@ socket.onclose = function(event) {
     if (event.wasClean) {
         console.log(`[close] Connection closed cleanly, code=${event.code} reason=${event.reason}`);
     } else {
-        // e.g. server process killed or network down
-        // event.code is usually 1006 in this case
         console.log('[close] Connection died');
     }
 };
