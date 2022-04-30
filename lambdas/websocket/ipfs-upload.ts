@@ -1,4 +1,5 @@
 import {ApiGatewayManagementApi} from "aws-sdk";
+// Todo: import infura node sdk
 
 const BUCKET_NAME = process.env.BUCKET_NAME;
 
