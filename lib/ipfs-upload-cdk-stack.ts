@@ -13,6 +13,7 @@ export class IpfsUploadCdkStack extends cdk.Stack {
         const STAGE = 'dev'; // Todo: replace with environment variable
         const DOMAIN_NAME = 'http://localhost:3000'; // Todo: replace with environment variable
         const BUCKET_NAME = 'ipfs-upload-infura'; // Todo: replace with environment variable
+        const REGION = 'eu-west-1'; // Todo: replace with environment variable
 
         const connectHandler = new NodejsFunction(this, 'IpfsUploadConnect', {
             entry: 'lambdas/websocket/connect.ts',
@@ -26,7 +27,9 @@ export class IpfsUploadCdkStack extends cdk.Stack {
             entry: 'lambdas/websocket/ipfs-upload.ts',
             environment: {
                 BUCKET_NAME,
-            }
+                REGION
+            },
+            timeout: Duration.seconds(60)
         });
 
         ipfsUploadHandler.addToRolePolicy(new PolicyStatement({
@@ -35,7 +38,8 @@ export class IpfsUploadCdkStack extends cdk.Stack {
                 "s3:ListAllMyBuckets",
                 "s3:ListBucket",
                 "s3:GetObject",
-                "s3:GetObjectAcl"
+                "s3:GetObjectAcl",
+                "execute-api:ManageConnections"
             ],
             resources: ['*'],
             effect: Effect.ALLOW,
