@@ -46,9 +46,10 @@ export const handler = async (event: any) => {
     const body = JSON.parse(event.body);
 
     // Todo: handle array of filenames
-    const filename = body.data.filename;
 
-    if (!filename) return {statusCode: 400, body: {error: 'Missing filename parameter'}};
+    if (!body.data.filenames) return {statusCode: 400, body: {error: 'Missing filename parameter'}};
+
+    const filenames = body.data.filenames.split(',');
 
     const connectionId = event.requestContext.connectionId;
     console.log('connectionId', connectionId);
@@ -59,24 +60,29 @@ export const handler = async (event: any) => {
     });
 
     try {
-        await managementApi.postToConnection({ConnectionId: connectionId, Data: 'STARTED'}).promise();
-        // Todo: loop all filenames
+        const startResponse = JSON.stringify({status: 'STARTED'});
+        await managementApi.postToConnection({ConnectionId: connectionId, Data: startResponse}).promise();
 
-        const response = await s3Client.send(new GetObjectCommand({
-            Bucket: BUCKET_NAME,
-            Key: filename,
-        }));
-        const stream = response.Body as Readable
-        const buffer = await getBufferFromStream(stream);
+        for (const filename of filenames) {
+            const addingResponse = JSON.stringify({status: 'ADDING', filename});
+            await managementApi.postToConnection({ConnectionId: connectionId, Data: addingResponse}).promise();
+            const response = await s3Client.send(new GetObjectCommand({
+                Bucket: BUCKET_NAME,
+                Key: filename,
+            }));
+            const stream = response.Body as Readable
+            const buffer = await getBufferFromStream(stream);
+            const hash = await ipfs.add(buffer);
+            const addedResponse = JSON.stringify({status: 'ADDED', filename, ipfsHash: `ipfs://${hash.path}`});
+            await managementApi.postToConnection({ConnectionId: connectionId, Data: addedResponse}).promise();
+        }
 
-        const hash = await ipfs.add(buffer);
-        const successResponse = JSON.stringify({filename, ipfsHash: `ipfs://${hash.path}`});
-        await managementApi.postToConnection({ConnectionId: connectionId, Data: successResponse}).promise();
-        await managementApi.postToConnection({ConnectionId: connectionId, Data: 'DONE'}).promise();
+        const endResponse = JSON.stringify({status: 'COMPLETE'})
+        await managementApi.postToConnection({ConnectionId: connectionId, Data: endResponse}).promise();
         await managementApi.deleteConnection({ConnectionId: connectionId}).promise();
     } catch (e: any) {
         console.log('Stack', e?.stack);
-        const errorResponse = JSON.stringify({error: e?.stack});
+        const errorResponse = JSON.stringify({status: 'ERROR', message: e?.stack});
         await managementApi.postToConnection({ConnectionId: connectionId, Data: errorResponse}).promise();
         await managementApi.deleteConnection({ConnectionId: connectionId}).promise();
         return {
