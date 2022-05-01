@@ -6,14 +6,23 @@ import {NodejsFunction} from "@aws-cdk/aws-lambda-nodejs";
 import {Effect, PolicyStatement} from "@aws-cdk/aws-iam";
 import {Bucket, CfnBucket, HttpMethods} from "@aws-cdk/aws-s3";
 import {Cors, LambdaIntegration, RestApi} from "@aws-cdk/aws-apigateway";
+import {Environment} from "../bin/environment";
+
+
 
 export class IpfsUploadCdkStack extends cdk.Stack {
-    constructor(scope: cdk.App, id: string, props?: cdk.StackProps) {
+    constructor(scope: cdk.App, id: string, props?: cdk.StackProps, envs?: Environment) {
+        if(!envs) throw new Error('Setup your environment variables in a .env at the root of the project')
         super(scope, id, props);
-        const STAGE = 'dev'; // Todo: replace with environment variable
-        const DOMAIN_NAME = 'http://localhost:3000'; // Todo: replace with environment variable
-        const BUCKET_NAME = 'ipfs-upload-infura'; // Todo: replace with environment variable
-        const REGION = 'eu-west-1'; // Todo: replace with environment variable
+        const {
+            STAGE,
+            REGION,
+            BUCKET_NAME,
+            DOMAIN_NAME,
+            IPFS_URL,
+            INFURA_PROJECT_ID,
+            INFURA_SECRET
+        } = envs;
 
         const connectHandler = new NodejsFunction(this, 'IpfsUploadConnect', {
             entry: 'lambdas/websocket/connect.ts',
@@ -27,7 +36,10 @@ export class IpfsUploadCdkStack extends cdk.Stack {
             entry: 'lambdas/websocket/ipfs-upload.ts',
             environment: {
                 BUCKET_NAME,
-                REGION
+                REGION,
+                IPFS_URL,
+                INFURA_PROJECT_ID,
+                INFURA_SECRET
             },
             timeout: Duration.seconds(60)
         });

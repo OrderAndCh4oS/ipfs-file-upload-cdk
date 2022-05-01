@@ -6,9 +6,18 @@ import {Readable} from "stream";
 
 const BUCKET_NAME = process.env.BUCKET_NAME;
 const REGION = process.env.REGION;
+const IPFS_URL = process.env.IPFS_URL
+const INFURA_PROJECT_ID = process.env.INFURA_PROJECT_ID
+const INFURA_SECRET = process.env.INFURA_SECRET
 
 if (!BUCKET_NAME) throw new Error('Missing BUCKET_NAME');
 if (!REGION) throw new Error('Missing REGION');
+if (!IPFS_URL) throw new Error('Missing IPFS_URL)');
+if (!INFURA_PROJECT_ID) throw new Error('Missing INFURA_PROJECT_ID)');
+if (!INFURA_SECRET) throw new Error('Missing INFURA_SECRET)');
+
+console.log(INFURA_PROJECT_ID)
+console.log(INFURA_SECRET)
 
 // @ts-ignore
 global.AbortController = AbortController;
@@ -17,10 +26,13 @@ const s3Client = new S3Client({
     apiVersion: '2006-03-01',
     region: REGION,
 });
-const infuraUrl = 'https://ipfs.infura.io:5001';
 
-// Todo: Add infura with api key details
-const ipfs = create({url: infuraUrl});
+const Authorization = 'Basic ' + Buffer.from(`${INFURA_PROJECT_ID}:${INFURA_SECRET}`).toString('base64');
+
+const ipfs = create({
+    url: IPFS_URL,
+    headers: {Authorization}
+});
 
 export const handler = async (event: any) => {
     if (!event.body) {
